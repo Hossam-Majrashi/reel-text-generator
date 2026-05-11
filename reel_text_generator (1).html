@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Reel Text Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&family=Inter:wght@300;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0a;--surface:#111;--border:#222;--accent:#fff;--muted:#555;--input-bg:#161616;--text:#e0e0e0;--card:#131313;--shadow:rgba(0,0,0,.6);--danger:#c33;--t:.3s ease;}
+body.light{--bg:#f4f4f4;--surface:#fff;--border:#ddd;--accent:#111;--muted:#999;--input-bg:#fff;--text:#222;--card:#fff;--shadow:rgba(0,0,0,.1);}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;transition:background var(--t),color var(--t);}
+body[lang=ar],body[lang=ar] *{font-family:'Tajawal','Segoe UI',Tahoma,sans-serif!important}
+nav{width:100%;max-width:860px;display:flex;align-items:center;justify-content:space-between;padding:20px 24px;gap:12px}
+.nav-brand{font-size:13px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--text)}
+.nav-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 13px;font-size:12px;cursor:pointer;transition:background var(--t),border-color var(--t);font-family:inherit}
+.icon-btn:hover{background:var(--surface);border-color:var(--muted)}
+.icon-btn.active-lang{background:var(--surface);border-color:var(--muted);font-weight:700}
+main{width:100%;max-width:860px;padding:0 24px 60px;display:flex;flex-direction:column;align-items:center;gap:32px}
+.hero{text-align:center;padding:8px 0 0}
+.hero h1{font-size:clamp(20px,4vw,34px);font-weight:200;letter-spacing:.4em;text-transform:uppercase;color:var(--text)}
+.hero p{margin-top:6px;font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;box-shadow:0 4px 24px var(--shadow);transition:background var(--t),border-color var(--t)}
+.card-title{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.app-layout{display:flex;gap:24px;width:100%;align-items:flex-start;flex-wrap:wrap}
+.controls-col{flex:1;min-width:250px;display:flex;flex-direction:column;gap:14px}
+.canvas-col{display:flex;flex-direction:column;align-items:center;gap:12px}
+.input-row{display:flex;gap:8px}
+input[type=text]{flex:1;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;padding:10px 14px;outline:none;transition:border-color .2s;font-family:'Tajawal','Inter','Segoe UI',Tahoma,sans-serif;unicode-bidi:plaintext;direction:auto;}
+input[type=text]:focus{border-color:var(--muted)}
+input[type=text]::placeholder{color:var(--muted)}
+.btn-primary{background:var(--accent);color:var(--bg);border:none;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:10px 18px;cursor:pointer;transition:opacity .2s;white-space:nowrap;font-family:inherit}
+.btn-primary:hover{opacity:.85}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:9px 16px;cursor:pointer;transition:background .2s,border-color .2s;white-space:nowrap;font-family:inherit;display:flex;align-items:center;gap:7px}
+.btn-secondary:hover{background:var(--surface)}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary.recording{background:var(--danger);border-color:var(--danger);color:#fff;animation:pulsebtn 1s ease-in-out infinite}
+@keyframes pulsebtn{0%,100%{opacity:1}50%{opacity:.6}}
+.sliders{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slider-group{display:flex;flex-direction:column;gap:6px}
+.slider-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.slider-label span{color:var(--text);font-weight:600}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--border);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--accent);cursor:pointer}
+.dir-row{display:flex;gap:7px}
+.dir-btn{flex:1;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:10px;padding:8px;border-radius:8px;cursor:pointer;transition:all .2s;font-family:inherit}
+.dir-btn.active{background:var(--surface);border-color:var(--muted);color:var(--text);font-weight:600}
+.canvas-wrapper{width:min(200px,80vw);aspect-ratio:9/16;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#000;box-shadow:0 0 32px rgba(255,255,255,.03)}
+.canvas-wrapper canvas{width:100%;height:100%;display:block}
+.export-section{width:100%;display:flex;flex-direction:column;gap:9px}
+.duration-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+.chips-row{display:flex;gap:5px;flex-wrap:wrap}
+.chip{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:16px;font-size:10px;padding:4px 12px;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.chip:hover{border-color:var(--muted);color:var(--text)}
+.chip.active{background:var(--surface);border-color:var(--muted);color:var(--text);font-weight:700}
+.chip.mp4-chip.active{background:rgba(220,60,60,.12);border-color:#c44;color:#e55}
+.chip.webm-chip.active{background:rgba(60,120,220,.12);border-color:#46a;color:#68c}
+.format-note{font-size:10px;color:var(--danger);letter-spacing:.06em;min-height:14px}
+.countdown-badge{font-size:11px;color:var(--muted);text-align:center;letter-spacing:.1em;min-height:16px;font-variant-numeric:tabular-nums}
+.countdown-badge.active{color:var(--text);font-weight:600}
+.progress-wrap{width:100%;height:2px;background:var(--border);border-radius:2px;overflow:hidden;display:none}
+.progress-bar{height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width .2s linear}
+.record-status{font-size:10px;color:var(--muted);text-align:center;letter-spacing:.08em;min-height:13px}
+.rec-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--danger);margin-right:4px;animation:blink 1s ease-in-out infinite;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+.arabic-tip{font-size:11px;color:var(--muted);padding:7px 11px;border:1px solid var(--border);border-radius:8px;line-height:1.6}
+.divider{width:100%;height:1px;background:var(--border)}
+.dev-card{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.dev-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#333);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--text);flex-shrink:0;font-family:'Inter',sans-serif}
+body.light .dev-avatar{background:linear-gradient(135deg,#e8e8e8,#d0d0d0)}
+.dev-info{flex:1;min-width:180px}
+.dev-name-ar{font-size:17px;font-weight:700;color:var(--text);margin-bottom:1px;font-family:'Tajawal',Tahoma,sans-serif}
+.dev-name-en{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-family:'Inter',sans-serif}
+.dev-role{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.dev-tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:9px;letter-spacing:.06em;padding:3px 9px;border-radius:16px;border:1px solid var(--border);color:var(--muted);text-transform:uppercase}
+.dev-links{display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+.dev-link{font-size:10px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:8px 12px;transition:color .2s,border-color .2s,background .2s;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.dev-link:hover{color:var(--text);border-color:var(--muted);background:var(--surface)}
+footer{width:100%;padding:20px;text-align:center;font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;border-top:1px solid var(--border)}
+[dir=rtl] .dev-links{align-items:flex-start}
+[dir=rtl] .input-row{flex-direction:row-reverse}
+[dir=rtl] .slider-label{flex-direction:row-reverse}
+[dir=rtl] .nav-brand{letter-spacing:.04em}
+@media(max-width:600px){.sliders{grid-template-columns:1fr}.dev-card{flex-direction:column;align-items:flex-start}.dev-links{flex-direction:row;flex-wrap:wrap;align-items:flex-start}nav,main{padding-left:16px;padding-right:16px}.card{padding:18px}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-brand" id="navBrand">Reel Text</div>
+  <div class="nav-actions">
+    <button class="icon-btn active-lang" id="btnEN" onclick="setLang('en')">EN</button>
+    <button class="icon-btn" id="btnAR" onclick="setLang('ar')">ع</button>
+    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
+  </div>
+</nav>
+<main>
+  <div class="hero">
+    <h1 id="heroTitle">Reel Text</h1>
+    <p id="heroSub">Cinematic Text Animation Generator</p>
+  </div>
+  <div class="card">
+    <div class="card-title" id="labelApp">Generator</div>
+    <div class="app-layout">
+      <div class="controls-col">
+        <div class="input-row">
+          <input type="text" id="textInput" placeholder="Enter text..." value="LUXURY" maxlength="80"/>
+          <button class="btn-primary" onclick="startAnimation()"><span id="lblGenerate">Generate</span></button>
+        </div>
+        <div class="arabic-tip" id="arabicTip" style="display:none">✦ التشكيل مدعوم — جرّب: لا إله إلا الله</div>
+        <div class="sliders">
+          <div class="slider-group">
+            <div class="slider-label"><span id="lblSize">Text Size</span><span id="sizeVal">38</span></div>
+            <input type="range" id="sizeRange" min="16" max="72" value="38"/>
+          </div>
+          <div class="slider-group">
+            <div class="slider-label"><span id="lblSpeed">Speed</span><span id="speedVal">5</span></div>
+            <input type="range" id="speedRange" min="1" max="12" value="5"/>
+          </div>
+          <div class="slider-group">
+            <div class="slider-label"><span id="lblCount">Lines</span><span id="countVal">12</span></div>
+            <input type="range" id="countRange" min="4" max="28" value="12"/>
+          </div>
+          <div class="slider-group">
+            <div class="slider-label"><span id="lblGlow">Glow</span><span id="glowVal">6</span></div>
+            <input type="range" id="glowRange" min="0" max="20" value="6"/>
+          </div>
+        </div>
+        <div>
+          <div class="slider-label" style="margin-bottom:9px"><span id="lblDirection">Direction</span></div>
+          <div class="dir-row">
+            <button class="dir-btn active" data-dir="-1" id="dirLeft">← Left</button>
+            <button class="dir-btn" data-dir="1" id="dirRight">Right →</button>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-col">
+        <div class="canvas-wrapper"><canvas id="reelCanvas"></canvas></div>
+        <div class="export-section">
+          <div class="duration-label" id="lblDuration">Duration</div>
+          <div class="chips-row">
+            <button class="chip" data-sec="5"  onclick="selectDuration(this)">5s</button>
+            <button class="chip" data-sec="10" onclick="selectDuration(this)">10s</button>
+            <button class="chip active" data-sec="15" onclick="selectDuration(this)">15s</button>
+            <button class="chip" data-sec="20" onclick="selectDuration(this)">20s</button>
+            <button class="chip" data-sec="30" onclick="selectDuration(this)">30s</button>
+            <button class="chip" data-sec="60" onclick="selectDuration(this)">60s</button>
+          </div>
+          <div class="duration-label" id="lblFormat" style="margin-top:4px">Format</div>
+          <div class="chips-row">
+            <button class="chip mp4-chip active" data-fmt="mp4" onclick="selectFormat(this)">MP4 (H.264)</button>
+            <button class="chip webm-chip" data-fmt="webm" onclick="selectFormat(this)">WebM</button>
+          </div>
+          <div class="format-note" id="formatNote"></div>
+          <div class="countdown-badge" id="countdownBadge"></div>
+          <button class="btn-secondary" id="recordBtn" onclick="handleRecord()">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="6" cy="6" r="3"/></svg>
+            <span id="lblRecord">Record &amp; Download</span>
+          </button>
+          <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+          <div class="record-status" id="statusText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="card">
+    <div class="card-title" id="labelDev">Developer</div>
+    <div class="dev-card">
+      <div class="dev-avatar">HM</div>
+      <div class="dev-info">
+        <div class="dev-name-ar">حسام حسن مجرشي</div>
+        <div class="dev-name-en">Hossam Hassan Majrashi</div>
+        <div class="dev-role" id="devRole">Mobile &amp; Full-Stack Developer</div>
+        <div class="dev-tags">
+          <span class="tag">Flutter</span><span class="tag">Kotlin</span>
+          <span class="tag">Android ROM</span><span class="tag">Linux</span>
+          <span class="tag">Dart</span><span class="tag">Python</span>
+        </div>
+      </div>
+      <div class="dev-links">
+        <a class="dev-link" href="https://hossam-majrashi.github.io/Works/" target="_blank" rel="noopener">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span id="lblWebsite">Portfolio</span>
+        </a>
+        <a class="dev-link" href="mailto:hossam.majrashi@gmail.com">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+          hossam.majrashi@gmail.com
+        </a>
+        <a class="dev-link" href="https://github.com/hossam-majrashi" target="_blank" rel="noopener">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.6 1.2 3.2.9.1-.7.4-1.2.7-1.5-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 5.1 18 5.4 18 5.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+<footer><span id="footerText">Built with vanilla HTML · CSS · JavaScript</span></footer>
+
+<script>
+// ─── i18n ────────────────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    navBrand:'Reel Text', heroTitle:'Reel Text', heroSub:'Cinematic Text Animation Generator',
+    labelApp:'Generator', labelDev:'Developer', lblGenerate:'Generate',
+    lblSize:'Text Size', lblSpeed:'Speed', lblCount:'Lines', lblGlow:'Glow',
+    lblDirection:'Direction', dirLeft:'← Left', dirRight:'Right →',
+    lblDuration:'Duration', lblFormat:'Format',
+    lblRecord:'Record & Download',
+    lblCountdown: n => `Starting in ${n}…`,
+    lblRecording: s => `Recording… ${s}s left`,
+    lblEncoding: p => `Encoding… ${p}%`,
+    lblProcessing: 'Processing…',
+    lblDone: (s, m) => `✓ Downloaded ${s}s · ${m} MB`,
+    lblMp4Note: '⚠ MP4 needs Chrome / Edge 94+',
+    lblWebsite:'Portfolio', devRole:'Mobile & Full-Stack Developer',
+    placeholder:'Enter text... e.g. LUXURY',
+    footerText:'Built with vanilla HTML · CSS · JavaScript'
+  },
+  ar: {
+    navBrand:'ريل تكست', heroTitle:'ريل تكست', heroSub:'مولّد فيديوهات النصوص السينمائية',
+    labelApp:'المولّد', labelDev:'المطوّر', lblGenerate:'توليد',
+    lblSize:'حجم النص', lblSpeed:'السرعة', lblCount:'الأسطر', lblGlow:'التوهج',
+    lblDirection:'الاتجاه', dirLeft:'يسار ←', dirRight:'→ يمين',
+    lblDuration:'المدة', lblFormat:'الصيغة',
+    lblRecord:'تسجيل وتنزيل',
+    lblCountdown: n => `البدء بعد ${n}…`,
+    lblRecording: s => `جاري التسجيل… باقي ${s} ثانية`,
+    lblEncoding: p => `جاري الترميز… ${p}%`,
+    lblProcessing: 'جاري المعالجة…',
+    lblDone: (s, m) => `✓ تم التنزيل ${s} ثانية · ${m} ميغ`,
+    lblMp4Note: '⚠ MP4 يتطلب Chrome / Edge 94+',
+    lblWebsite:'الموقع الشخصي', devRole:'مطوّر تطبيقات موبايل وويب',
+    placeholder:'أدخل النص... مثال: لا إله إلا الله',
+    footerText:'مبني بـ HTML · CSS · JavaScript'
+  }
+};
+
+// ─── Language / Theme ─────────────────────────────────────────────────────────
+let currentLang = 'en';
+const tIds = ['navBrand','heroTitle','heroSub','labelApp','labelDev','lblGenerate',
+  'lblSize','lblSpeed','lblCount','lblGlow','lblDirection','dirLeft','dirRight',
+  'lblDuration','lblFormat','lblRecord','lblWebsite','devRole','footerText'];
+
+function setLang(lang) {
+  currentLang = lang;
+  const t = i18n[lang], isAR = lang === 'ar';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = isAR ? 'rtl' : 'ltr';
+  document.body.setAttribute('lang', lang);
+  tIds.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = t[id] || ''; });
+  document.getElementById('textInput').placeholder = t.placeholder;
+  document.getElementById('btnEN').classList.toggle('active-lang', !isAR);
+  document.getElementById('btnAR').classList.toggle('active-lang', isAR);
+  document.getElementById('arabicTip').style.display = isAR ? 'block' : 'none';
+  updateFormatNote();
+}
+
+let isLight = false;
+function toggleTheme() {
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('themeBtn').textContent = isLight ? '🌙' : '☀️';
+}
+
+// ─── Duration / Format selection ─────────────────────────────────────────────
+let selectedDuration = 15;
+function selectDuration(el) {
+  document.querySelectorAll('[data-sec]').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedDuration = parseInt(el.dataset.sec);
+}
+
+const hasWebCodecs = typeof VideoEncoder !== 'undefined';
+let selectedFormat = 'mp4';
+
+function selectFormat(el) {
+  document.querySelectorAll('[data-fmt]').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedFormat = el.dataset.fmt;
+  updateFormatNote();
+}
+
+function updateFormatNote() {
+  const note = document.getElementById('formatNote');
+  if (selectedFormat === 'mp4' && !hasWebCodecs) {
+    note.textContent = i18n[currentLang].lblMp4Note;
+  } else {
+    note.textContent = '';
+  }
+}
+
+// ─── Canvas setup ─────────────────────────────────────────────────────────────
+const W = 1080, H = 1920;
+const offCanvas = document.createElement('canvas');
+offCanvas.width = W; offCanvas.height = H;
+// willReadFrequently=false is fine since we only draw (never read pixels back)
+const offCtx = offCanvas.getContext('2d', { alpha: false, willReadFrequently: false });
+
+const previewCanvas = document.getElementById('reelCanvas');
+const PW = 270, PH = 480;
+previewCanvas.width = PW; previewCanvas.height = PH;
+const pCtx = previewCanvas.getContext('2d', { alpha: false });
+
+// ─── Animation state ──────────────────────────────────────────────────────────
+let words = [], animId = null, direction = -1;
+let isRecording = false, isCountingDown = false;
+let settings = { text: 'LUXURY', fontSize: 38, speed: 5, count: 12, glow: 6 };
+
+const arabicRe = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const isAR = t => arabicRe.test(t);
+
+function makeFont(fs, text) {
+  return isAR(text)
+    ? `${fs}px 'Tajawal','Segoe UI',Tahoma,sans-serif`
+    : `300 ${fs}px 'Inter','Segoe UI',sans-serif`;
+}
+
+function measureW(text, fs) {
+  offCtx.font = makeFont(fs, text);
+  return offCtx.measureText(text).width;
+}
+
+// ─── Word management ──────────────────────────────────────────────────────────
+function buildWords() {
+  const { text, fontSize, count, speed } = settings;
+  const sf = Math.round(fontSize * (W / 520));
+  const n = Math.min(count, Math.floor(H / (sf * 1.3)));
+  words = [];
+  for (let i = 0; i < n; i++) {
+    const rh = H / n, d = Math.random();
+    const fs = Math.round(sf * (0.72 + d * 0.5));
+    const tw = measureW(text, fs);
+    const spd = (speed * (W / 520)) * (0.45 + d * 0.9);
+    const startOffset = Math.random() * W * 0.5;
+    const arabic = isAR(text);
+    words.push({
+      text, fs, tw, arabic,
+      fontStr: makeFont(fs, text),                  // ← cached font string
+      y: Math.max(fs * 1.4, Math.min(H - fs * 0.4,
+          rh * i + rh * 0.5 + (Math.random() - .5) * rh * 0.35)),
+      x: direction === -1 ? W * 0.1 + startOffset * 0.3 : W * 0.9 - tw - startOffset * 0.3,
+      speed: spd * (direction === -1 ? -1 : 1),
+      opacity: 0.22 + d * 0.78,
+      blur: d < 0.25 ? (1 - d / 0.25) * 2 : 0,
+      dir: direction
+    });
+  }
+}
+
+function resetWord(w) {
+  const { text, fontSize, speed } = settings;
+  const sf = Math.round(fontSize * (W / 520));
+  const d = Math.random();
+  w.opacity = 0.22 + d * 0.78;
+  w.blur = d < 0.25 ? (1 - d / 0.25) * 2 : 0;
+  w.fs = Math.round(sf * (0.72 + d * 0.5));
+  w.tw = measureW(text, w.fs);
+  w.fontStr = makeFont(w.fs, text);                 // ← update cache
+  w.arabic = isAR(text);
+  w.text = text;
+  w.speed = (speed * (W / 520)) * (0.45 + d * 0.9) * (direction === -1 ? -1 : 1);
+  w.dir = direction;
+  w.x = direction === -1
+    ? W + w.tw + 20 + Math.random() * 300
+    : -(w.tw + 20 + Math.random() * 300);
+}
+
+// ─── Draw (optimised) ─────────────────────────────────────────────────────────
+// Strategy:
+//   Pass 1 — no blur words (vast majority): single filter=none, no save/restore
+//   Pass 2 — blur words (only the faintest ~25%): set filter per word, reset after
+// This avoids per-word save/restore and minimises GPU state changes.
+function drawFrame() {
+  const gp = settings.glow * (W / 520);
+  offCtx.fillStyle = '#000';
+  offCtx.fillRect(0, 0, W, H);
+  offCtx.fillStyle = '#fff';
+  offCtx.textBaseline = 'middle';
+
+  // Global glow/shadow (applied once)
+  if (gp > 0) {
+    offCtx.shadowColor = 'rgba(255,255,255,.9)';
+    offCtx.shadowBlur = gp;
+  } else {
+    offCtx.shadowBlur = 0;
+  }
+
+  // Pass 1: non-blurred words
+  offCtx.filter = 'none';
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    if (w.blur > 0) continue;
+    offCtx.globalAlpha = w.opacity;
+    offCtx.font = w.fontStr;
+    if (w.arabic) { offCtx.direction = 'rtl'; offCtx.textAlign = 'right'; }
+    else           { offCtx.direction = 'ltr'; offCtx.textAlign = 'left';  }
+    offCtx.fillText(w.text, w.arabic ? w.x + w.tw : w.x, w.y);
+    // move
+    w.x += w.speed;
+    if (w.dir === -1 && w.x + w.tw < 0) resetWord(w);
+    else if (w.dir === 1 && w.x > W)    resetWord(w);
+  }
+
+  // Pass 2: blurred words (rare — only the faintest subset)
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    if (w.blur === 0) continue;
+    offCtx.filter = `blur(${w.blur.toFixed(1)}px)`;
+    offCtx.globalAlpha = w.opacity;
+    offCtx.font = w.fontStr;
+    if (w.arabic) { offCtx.direction = 'rtl'; offCtx.textAlign = 'right'; }
+    else           { offCtx.direction = 'ltr'; offCtx.textAlign = 'left';  }
+    offCtx.fillText(w.text, w.arabic ? w.x + w.tw : w.x, w.y);
+    // move
+    w.x += w.speed;
+    if (w.dir === -1 && w.x + w.tw < 0) resetWord(w);
+    else if (w.dir === 1 && w.x > W)    resetWord(w);
+  }
+
+  // Reset state
+  offCtx.filter = 'none';
+  offCtx.shadowBlur = 0;
+  offCtx.globalAlpha = 1;
+
+  // Scale down to preview
+  pCtx.drawImage(offCanvas, 0, 0, PW, PH);
+}
+
+let lastTime = 0;
+const FRAME_MS = 1000 / 30;
+function loop(ts) {
+  animId = requestAnimationFrame(loop);
+  if (ts - lastTime < FRAME_MS) return;
+  lastTime = ts;
+  drawFrame();
+}
+
+function startAnimation() {
+  settings.text = document.getElementById('textInput').value.trim() || 'LUXURY';
+  if (animId) cancelAnimationFrame(animId);
+  buildWords(); lastTime = 0;
+  animId = requestAnimationFrame(loop);
+}
+
+document.fonts.ready.then(() => startAnimation());
+document.getElementById('textInput').addEventListener('keydown', e => { if (e.key === 'Enter') startAnimation(); });
+
+let rebuildTimer = null;
+function debouncedRebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(startAnimation, 80); }
+
+function bindSlider(id, valId, key, fn) {
+  const el = document.getElementById(id), lbl = document.getElementById(valId);
+  lbl.textContent = el.value;
+  el.addEventListener('input', () => {
+    lbl.textContent = el.value;
+    settings[key] = parseFloat(el.value);
+    if (fn) fn(); else debouncedRebuild();
+  });
+}
+bindSlider('sizeRange',  'sizeVal',  'fontSize');
+bindSlider('countRange', 'countVal', 'count');
+bindSlider('glowRange',  'glowVal',  'glow');
+bindSlider('speedRange', 'speedVal', 'speed', () => {
+  words.forEach(w => {
+    const d = (w.opacity - 0.22) / 0.78;
+    w.speed = (settings.speed * (W / 520)) * (0.45 + d * 0.9) * (direction === -1 ? -1 : 1);
+  });
+});
+
+document.querySelectorAll('.dir-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    direction = parseInt(btn.dataset.dir);
+    debouncedRebuild();
+  });
+});
+
+// ─── Recording UI helpers ─────────────────────────────────────────────────────
+const recordBtn      = document.getElementById('recordBtn');
+const progressWrap   = document.getElementById('progressWrap');
+const progressBar    = document.getElementById('progressBar');
+const statusText     = document.getElementById('statusText');
+const countdownBadge = document.getElementById('countdownBadge');
+
+function setProgress(pct) { progressBar.style.width = pct + '%'; }
+
+function finishUI(blobSize) {
+  const t = i18n[currentLang];
+  statusText.textContent = t.lblDone(selectedDuration, (blobSize / 1024 / 1024).toFixed(1));
+  recordBtn.classList.remove('recording');
+  recordBtn.disabled = false;
+  document.getElementById('lblRecord').textContent = t.lblRecord;
+  setProgress(100);
+  setTimeout(() => { progressWrap.style.display = 'none'; setProgress(0); }, 1800);
+  isRecording = false;
+}
+
+function downloadBlob(blob, ext) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `reel-${selectedDuration}s-${Date.now()}.${ext}`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 8000);
+}
+
+// ─── Countdown ────────────────────────────────────────────────────────────────
+let countdownTimer = null;
+
+function handleRecord() {
+  if (isRecording) { stopWebmRecording(); return; }
+  if (isCountingDown) { cancelCountdown(); return; }
+  beginCountdown();
+}
+
+function beginCountdown() {
+  isCountingDown = true;
+  recordBtn.disabled = true;
+  statusText.textContent = '';
+  let n = 3;
+  const t = i18n[currentLang];
+  countdownBadge.textContent = t.lblCountdown(n);
+  countdownBadge.className = 'countdown-badge active';
+  countdownTimer = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(countdownTimer);
+      countdownBadge.textContent = '';
+      countdownBadge.className = 'countdown-badge';
+      recordBtn.disabled = false;
+      isCountingDown = false;
+      // Route to correct recorder
+      if (selectedFormat === 'mp4' && hasWebCodecs) startMp4Recording();
+      else startWebmRecording();
+    } else {
+      countdownBadge.textContent = t.lblCountdown(n);
+    }
+  }, 1000);
+}
+
+function cancelCountdown() {
+  clearInterval(countdownTimer);
+  countdownBadge.textContent = ''; countdownBadge.className = 'countdown-badge';
+  recordBtn.disabled = false; isCountingDown = false; statusText.textContent = '';
+}
+
+// ─── WebM recording (MediaRecorder fallback) ──────────────────────────────────
+let mediaRecorder = null, chunks = [], recordingTimer = null;
+
+function startWebmRecording() {
+  chunks = []; isRecording = true;
+  progressWrap.style.display = 'block'; setProgress(0);
+  const t = i18n[currentLang];
+  const stream = offCanvas.captureStream(30);
+  const mt = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9'
+    : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+  try { mediaRecorder = new MediaRecorder(stream, { mimeType: mt, videoBitsPerSecond: 6_000_000 }); }
+  catch (e) { mediaRecorder = new MediaRecorder(stream); }
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    const ext = mt.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: mt });
+    downloadBlob(blob, ext);
+    finishUI(blob.size);
+  };
+  mediaRecorder.start(200);
+  recordBtn.classList.add('recording');
+  const total = selectedDuration; let elapsed = 0;
+  const tick = () => {
+    elapsed++;
+    setProgress(elapsed / total * 100);
+    statusText.innerHTML = `<span class="rec-dot"></span>${t.lblRecording(total - elapsed)}`;
+    if (elapsed >= total) {
+      statusText.innerHTML = `<span class="rec-dot"></span>${t.lblProcessing}`;
+      stopWebmRecording();
+    } else {
+      recordingTimer = setTimeout(tick, 1000);
+    }
+  };
+  recordingTimer = setTimeout(tick, 1000);
+}
+
+function stopWebmRecording() {
+  if (recordingTimer) { clearTimeout(recordingTimer); recordingTimer = null; }
+  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  recordBtn.disabled = true;
+  document.getElementById('lblRecord').textContent = i18n[currentLang].lblProcessing;
+}
+
+// ─── MP4 recording (WebCodecs + mp4-muxer) ───────────────────────────────────
+// Uses:  VideoEncoder API  +  mp4-muxer (ESM, loaded on demand from CDN)
+// Produces genuine H.264 / AAC-less MP4, playable everywhere.
+let mp4FrameTimer = null;
+
+async function startMp4Recording() {
+  const t = i18n[currentLang];
+  isRecording = true;
+  recordBtn.classList.add('recording');
+  progressWrap.style.display = 'block'; setProgress(0);
+  statusText.innerHTML = `<span class="rec-dot"></span>${t.lblProcessing}`;
+
+  // Dynamically import mp4-muxer (ESM) — no extra <script> tag needed
+  let Muxer, ArrayBufferTarget;
+  try {
+    const mod = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@latest/build/mp4-muxer.js');
+    ({ Muxer, ArrayBufferTarget } = mod);
+  } catch (err) {
+    console.warn('mp4-muxer load failed, falling back to WebM', err);
+    isRecording = false;
+    recordBtn.classList.remove('recording');
+    progressWrap.style.display = 'none';
+    startWebmRecording();
+    return;
+  }
+
+  const target = new ArrayBufferTarget();
+  const muxer = new Muxer({
+    target,
+    video: { codec: 'avc', width: W, height: H, frameRate: 30 },
+    fastStart: 'in-memory'     // keeps the moov atom in memory, faster seek
+  });
+
+  // Check codec support
+  const codecCfg = {
+    codec: 'avc1.640029',     // H.264 High Profile Level 4.1
+    width: W, height: H,
+    bitrate: 8_000_000,
+    framerate: 30,
+    latencyMode: 'quality'
+  };
+  let supported = false;
+  try {
+    const check = await VideoEncoder.isConfigSupported(codecCfg);
+    supported = check.supported;
+  } catch (_) { /* API not available at all */ }
+
+  if (!supported) {
+    // Try baseline profile
+    codecCfg.codec = 'avc1.42001f'; // Baseline Level 3.1
+    try {
+      const check = await VideoEncoder.isConfigSupported(codecCfg);
+      supported = check.supported;
+    } catch (_) {}
+  }
+
+  if (!supported) {
+    console.warn('H.264 not supported, falling back to WebM');
+    isRecording = false;
+    recordBtn.classList.remove('recording');
+    progressWrap.style.display = 'none';
+    startWebmRecording();
+    return;
+  }
+
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+    error: e => console.error('VideoEncoder error:', e)
+  });
+  encoder.configure(codecCfg);
+
+  const FPS = 30;
+  const totalFrames = selectedDuration * FPS;
+  const frameIntervalMs = 1000 / FPS;
+  const frameDurationUs = Math.round(1_000_000 / FPS); // microseconds
+  let frameIndex = 0;
+
+  const captureNextFrame = async () => {
+    if (!isRecording || frameIndex >= totalFrames) {
+      // ── Finalise ──────────────────────────────────────────────────
+      mp4FrameTimer = null;
+      recordBtn.disabled = true;
+      document.getElementById('lblRecord').textContent = t.lblProcessing;
+      statusText.innerHTML = `<span class="rec-dot"></span>${t.lblProcessing}`;
+
+      await encoder.flush();
+      encoder.close();
+      muxer.finalize();
+
+      const blob = new Blob([target.buffer], { type: 'video/mp4' });
+      downloadBlob(blob, 'mp4');
+      finishUI(blob.size);
+      return;
+    }
+
+    // Encode one frame
+    const timestamp = frameIndex * frameDurationUs;
+    let frame;
+    try {
+      frame = new VideoFrame(offCanvas, { timestamp, duration: frameDurationUs });
+    } catch (e) {
+      console.error('VideoFrame creation failed:', e);
+      frame = null;
+    }
+
+    if (frame) {
+      encoder.encode(frame, { keyFrame: frameIndex % (FPS * 2) === 0 });
+      frame.close();
+    }
+
+    frameIndex++;
+    const elapsedSec = Math.floor(frameIndex / FPS);
+    const remainSec  = selectedDuration - elapsedSec;
+    setProgress(frameIndex / totalFrames * 100);
+    statusText.innerHTML = `<span class="rec-dot"></span>${t.lblRecording(remainSec)}`;
+
+    mp4FrameTimer = setTimeout(captureNextFrame, frameIntervalMs);
+  };
+
+  captureNextFrame();
+}
+
+// Expose a stop hook so the recording button works during MP4 capture
+const _origHandleRecord = handleRecord;
+// (For MP4 we let the timer run to completion; button just shows disabled)
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+updateFormatNote();
+</script>
+</body>
+</html>
