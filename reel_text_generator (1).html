@@ -107,7 +107,7 @@ footer{width:100%;padding:20px;text-align:center;font-size:10px;color:var(--mute
     <div class="app-layout">
       <div class="controls-col">
         <div class="input-row">
-          <input type="text" id="textInput" placeholder="Enter text..." value="LUXURY" maxlength="80"/>
+          <input type="text" id="textInput" placeholder="Enter text..." value="لا إله إلا اللّٰه محمد رسول اللّٰه" maxlength="80"/>
           <button class="btn-primary" onclick="startAnimation()"><span id="lblGenerate">Generate</span></button>
         </div>
         <div class="arabic-tip" id="arabicTip" style="display:none">✦ التشكيل مدعوم — جرّب: لا إله إلا الله</div>
@@ -215,9 +215,9 @@ const i18n = {
     lblEncoding: p => `Encoding… ${p}%`,
     lblProcessing: 'Processing…',
     lblDone: (s, m) => `✓ Downloaded ${s}s · ${m} MB`,
-    lblMp4Note: '⚠ MP4 needs Chrome / Edge 94+',
+    lblMp4Note: '⚠ Your browser will use the best supported export format automatically.',
     lblWebsite:'Portfolio', devRole:'Mobile & Full-Stack Developer',
-    placeholder:'Enter text... e.g. LUXURY',
+    placeholder:'Enter text... e.g. لا إله إلا اللّٰه محمد رسول اللّٰه',
     footerText:'Built with vanilla HTML · CSS · JavaScript'
   },
   ar: {
@@ -232,9 +232,9 @@ const i18n = {
     lblEncoding: p => `جاري الترميز… ${p}%`,
     lblProcessing: 'جاري المعالجة…',
     lblDone: (s, m) => `✓ تم التنزيل ${s} ثانية · ${m} ميغ`,
-    lblMp4Note: '⚠ MP4 يتطلب Chrome / Edge 94+',
+    lblMp4Note: '⚠ سيستخدم المتصفح أفضل صيغة تصدير مدعومة تلقائياً.',
     lblWebsite:'الموقع الشخصي', devRole:'مطوّر تطبيقات موبايل وويب',
-    placeholder:'أدخل النص... مثال: لا إله إلا الله',
+    placeholder:'أدخل النص... مثال: لا إله إلا اللّٰه محمد رسول اللّٰه',
     footerText:'مبني بـ HTML · CSS · JavaScript'
   }
 };
@@ -274,23 +274,48 @@ function selectDuration(el) {
   selectedDuration = parseInt(el.dataset.sec);
 }
 
-const hasWebCodecs = typeof VideoEncoder !== 'undefined';
 let selectedFormat = 'mp4';
 
-function selectFormat(el) {
+// Detect best MIME type the browser can record
+function detectMimeType(preferMp4) {
+  const mp4Types = ['video/mp4;codecs=h264,avc1','video/mp4;codecs=h264','video/mp4;codecs=avc1','video/mp4'];
+  const webmTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+  const order = preferMp4 ? [...mp4Types, ...webmTypes] : [...webmTypes];
+  for (const t of order) {
+    try { if (MediaRecorder.isTypeSupported(t)) return t; } catch(_) {}
+  }
+  return ''; // browser default
+}
+
+const _mp4Probe = detectMimeType(true);
+const nativeMp4 = _mp4Probe.includes('mp4');
+
+if (!nativeMp4) selectedFormat = 'webm';
+
+function syncFormatUI() {
   document.querySelectorAll('[data-fmt]').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  selectedFormat = el.dataset.fmt;
+  const active = document.querySelector(`[data-fmt="${selectedFormat}"]`);
+  if (active) active.classList.add('active');
+}
+
+function selectFormat(el) {
+  const requested = el.dataset.fmt;
+  if (requested === 'mp4' && !nativeMp4) {
+    selectedFormat = 'webm';
+  } else {
+    selectedFormat = requested;
+  }
   updateFormatNote();
 }
 
 function updateFormatNote() {
   const note = document.getElementById('formatNote');
-  if (selectedFormat === 'mp4' && !hasWebCodecs) {
+  if (!nativeMp4) {
     note.textContent = i18n[currentLang].lblMp4Note;
   } else {
     note.textContent = '';
   }
+  syncFormatUI();
 }
 
 // ─── Canvas setup ─────────────────────────────────────────────────────────────
@@ -308,7 +333,7 @@ const pCtx = previewCanvas.getContext('2d', { alpha: false });
 // ─── Animation state ──────────────────────────────────────────────────────────
 let words = [], animId = null, direction = -1;
 let isRecording = false, isCountingDown = false;
-let settings = { text: 'LUXURY', fontSize: 38, speed: 5, count: 12, glow: 6 };
+let settings = { text: 'لا إله إلا اللّٰه محمد رسول اللّٰه', fontSize: 38, speed: 5, count: 12, glow: 6 };
 
 const arabicRe = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 const isAR = t => arabicRe.test(t);
@@ -481,6 +506,7 @@ document.querySelectorAll('.dir-btn').forEach(btn => {
 });
 
 // ─── Recording UI helpers ─────────────────────────────────────────────────────
+const hasWebCodecs = typeof window.VideoEncoder !== 'undefined' && typeof window.VideoFrame !== 'undefined';
 const recordBtn      = document.getElementById('recordBtn');
 const progressWrap   = document.getElementById('progressWrap');
 const progressBar    = document.getElementById('progressBar');
@@ -503,9 +529,15 @@ function finishUI(blobSize) {
 function downloadBlob(blob, ext) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `reel-${selectedDuration}s-${Date.now()}.${ext}`;
+  a.style.display = 'none';
+  a.href = url;
+  a.download = `reel-${selectedDuration}s-${Date.now()}.${ext}`;
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 8000);
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 300);
 }
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
@@ -556,19 +588,47 @@ function startWebmRecording() {
   progressWrap.style.display = 'block'; setProgress(0);
   const t = i18n[currentLang];
   const stream = offCanvas.captureStream(30);
-  const mt = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-    ? 'video/webm;codecs=vp9'
-    : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : 'video/mp4';
+  const mt = detectMimeType(selectedFormat === 'mp4') || 'video/webm';
+
   try { mediaRecorder = new MediaRecorder(stream, { mimeType: mt, videoBitsPerSecond: 6_000_000 }); }
-  catch (e) { mediaRecorder = new MediaRecorder(stream); }
-  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  catch (e) {
+    try { mediaRecorder = new MediaRecorder(stream); }
+    catch (err) {
+      statusText.textContent = currentLang === 'ar' ? 'المتصفح لا يدعم التسجيل.' : 'Recording is not supported in this browser.';
+      recordBtn.classList.remove('recording');
+      recordBtn.disabled = false;
+      isRecording = false;
+      return;
+    }
+  }
+
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
   mediaRecorder.onstop = () => {
-    const ext = mt.includes('mp4') ? 'mp4' : 'webm';
-    const blob = new Blob(chunks, { type: mt });
+    const mime = mediaRecorder.mimeType || mt || 'video/webm';
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: mime });
+
+    if (!blob.size) {
+      statusText.textContent = currentLang === 'ar' ? 'فشل إنشاء ملف الفيديو.' : 'Failed to create the video file.';
+      recordBtn.classList.remove('recording');
+      recordBtn.disabled = false;
+      isRecording = false;
+      return;
+    }
+
     downloadBlob(blob, ext);
     finishUI(blob.size);
   };
-  mediaRecorder.start(200);
+
+  try { mediaRecorder.start(200); }
+  catch (err) {
+    statusText.textContent = currentLang === 'ar' ? 'تعذر بدء التسجيل.' : 'Could not start recording.';
+    recordBtn.classList.remove('recording');
+    recordBtn.disabled = false;
+    isRecording = false;
+    return;
+  }
+
   recordBtn.classList.add('recording');
   const total = selectedDuration; let elapsed = 0;
   const tick = () => {
@@ -719,6 +779,13 @@ const _origHandleRecord = handleRecord;
 // (For MP4 we let the timer run to completion; button just shows disabled)
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+if (!nativeMp4) {
+  const mp4Chip = document.querySelector('[data-fmt="mp4"]');
+  if (mp4Chip) {
+    mp4Chip.style.opacity = '0.55';
+    mp4Chip.title = 'Direct MP4 export is not supported in this browser';
+  }
+}
 updateFormatNote();
 </script>
 </body>
