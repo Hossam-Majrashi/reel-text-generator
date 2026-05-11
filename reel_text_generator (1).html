@@ -199,25 +199,22 @@ footer{width:100%;padding:20px;text-align:center;font-size:10px;color:var(--mute
   </div>
 </main>
 <footer><span id="footerText">Built with vanilla HTML · CSS · JavaScript</span></footer>
-
 <script>
-// ─── i18n ────────────────────────────────────────────────────────────────────
+// ─── i18n ─────────────────────────────────────────────────────────────────────
 const i18n = {
   en: {
     navBrand:'Reel Text', heroTitle:'Reel Text', heroSub:'Cinematic Text Animation Generator',
     labelApp:'Generator', labelDev:'Developer', lblGenerate:'Generate',
     lblSize:'Text Size', lblSpeed:'Speed', lblCount:'Lines', lblGlow:'Glow',
     lblDirection:'Direction', dirLeft:'← Left', dirRight:'Right →',
-    lblDuration:'Duration', lblFormat:'Format',
-    lblRecord:'Record & Download',
+    lblDuration:'Duration', lblFormat:'Format', lblRecord:'Record & Download',
     lblCountdown: n => `Starting in ${n}…`,
     lblRecording: s => `Recording… ${s}s left`,
-    lblEncoding: p => `Encoding… ${p}%`,
     lblProcessing: 'Processing…',
-    lblDone: (s, m) => `✓ Downloaded ${s}s · ${m} MB`,
-    lblMp4Note: '⚠ Your browser will use the best supported export format automatically.',
+    lblDone: (s, m) => `✓ Done · ${s}s · ${m} MB`,
+    lblMp4Note: '⚠ MP4 needs Chrome 130+ — will use WebM',
     lblWebsite:'Portfolio', devRole:'Mobile & Full-Stack Developer',
-    placeholder:'Enter text... e.g. لا إله إلا اللّٰه محمد رسول اللّٰه',
+    placeholder:'Enter text… e.g. LUXURY',
     footerText:'Built with vanilla HTML · CSS · JavaScript'
   },
   ar: {
@@ -225,16 +222,14 @@ const i18n = {
     labelApp:'المولّد', labelDev:'المطوّر', lblGenerate:'توليد',
     lblSize:'حجم النص', lblSpeed:'السرعة', lblCount:'الأسطر', lblGlow:'التوهج',
     lblDirection:'الاتجاه', dirLeft:'يسار ←', dirRight:'→ يمين',
-    lblDuration:'المدة', lblFormat:'الصيغة',
-    lblRecord:'تسجيل وتنزيل',
+    lblDuration:'المدة', lblFormat:'الصيغة', lblRecord:'تسجيل وتنزيل',
     lblCountdown: n => `البدء بعد ${n}…`,
-    lblRecording: s => `جاري التسجيل… باقي ${s} ثانية`,
-    lblEncoding: p => `جاري الترميز… ${p}%`,
+    lblRecording: s => `جاري التسجيل… باقي ${s}ث`,
     lblProcessing: 'جاري المعالجة…',
-    lblDone: (s, m) => `✓ تم التنزيل ${s} ثانية · ${m} ميغ`,
-    lblMp4Note: '⚠ سيستخدم المتصفح أفضل صيغة تصدير مدعومة تلقائياً.',
-    lblWebsite:'الموقع الشخصي', devRole:'مطوّر تطبيقات موبايل وويب',
-    placeholder:'أدخل النص... مثال: لا إله إلا اللّٰه محمد رسول اللّٰه',
+    lblDone: (s, m) => `✓ تم · ${s}ث · ${m} ميغ`,
+    lblMp4Note: '⚠ MP4 يتطلب Chrome 130+ — سيُستخدم WebM',
+    lblWebsite:'الموقع', devRole:'مطوّر تطبيقات موبايل وويب',
+    placeholder:'أدخل النص… مثال: لا إله إلا الله',
     footerText:'مبني بـ HTML · CSS · JavaScript'
   }
 };
@@ -258,7 +253,6 @@ function setLang(lang) {
   document.getElementById('arabicTip').style.display = isAR ? 'block' : 'none';
   updateFormatNote();
 }
-
 let isLight = false;
 function toggleTheme() {
   isLight = !isLight;
@@ -266,108 +260,82 @@ function toggleTheme() {
   document.getElementById('themeBtn').textContent = isLight ? '🌙' : '☀️';
 }
 
-// ─── Duration / Format selection ─────────────────────────────────────────────
-let selectedDuration = 15;
+// ─── Duration / Format ────────────────────────────────────────────────────────
+let selectedDuration = 15, selectedFormat = 'mp4';
+
 function selectDuration(el) {
   document.querySelectorAll('[data-sec]').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   selectedDuration = parseInt(el.dataset.sec);
 }
-
-let selectedFormat = 'mp4';
-
-// Detect best MIME type the browser can record
-function detectMimeType(preferMp4) {
-  const mp4Types = ['video/mp4;codecs=h264,avc1','video/mp4;codecs=h264','video/mp4;codecs=avc1','video/mp4'];
-  const webmTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
-  const order = preferMp4 ? [...mp4Types, ...webmTypes] : [...webmTypes];
-  for (const t of order) {
-    try { if (MediaRecorder.isTypeSupported(t)) return t; } catch(_) {}
-  }
-  return ''; // browser default
-}
-
-const _mp4Probe = detectMimeType(true);
-const nativeMp4 = _mp4Probe.includes('mp4');
-
-if (!nativeMp4) selectedFormat = 'webm';
-
-function syncFormatUI() {
-  document.querySelectorAll('[data-fmt]').forEach(c => c.classList.remove('active'));
-  const active = document.querySelector(`[data-fmt="${selectedFormat}"]`);
-  if (active) active.classList.add('active');
-}
-
 function selectFormat(el) {
-  const requested = el.dataset.fmt;
-  if (requested === 'mp4' && !nativeMp4) {
-    selectedFormat = 'webm';
-  } else {
-    selectedFormat = requested;
-  }
+  document.querySelectorAll('[data-fmt]').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedFormat = el.dataset.fmt;
   updateFormatNote();
+}
+
+// Check which MIME types Chrome actually supports right now
+function pickMime(preferMp4) {
+  const candidates = preferMp4
+    ? ['video/mp4;codecs=h264', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  for (const m of candidates) {
+    try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (_) {}
+  }
+  return null; // let browser decide
 }
 
 function updateFormatNote() {
   const note = document.getElementById('formatNote');
-  if (!nativeMp4) {
+  if (!note) return;
+  if (selectedFormat === 'mp4' && !pickMime(true)?.includes('mp4')) {
     note.textContent = i18n[currentLang].lblMp4Note;
   } else {
     note.textContent = '';
   }
-  syncFormatUI();
 }
 
-// ─── Canvas setup ─────────────────────────────────────────────────────────────
+// ─── Canvas ───────────────────────────────────────────────────────────────────
 const W = 1080, H = 1920;
 const offCanvas = document.createElement('canvas');
 offCanvas.width = W; offCanvas.height = H;
-// willReadFrequently=false is fine since we only draw (never read pixels back)
-const offCtx = offCanvas.getContext('2d', { alpha: false, willReadFrequently: false });
+const offCtx = offCanvas.getContext('2d', { alpha: false });
 
 const previewCanvas = document.getElementById('reelCanvas');
-const PW = 270, PH = 480;
-previewCanvas.width = PW; previewCanvas.height = PH;
+previewCanvas.width = 270; previewCanvas.height = 480;
 const pCtx = previewCanvas.getContext('2d', { alpha: false });
 
-// ─── Animation state ──────────────────────────────────────────────────────────
+// ─── Animation ────────────────────────────────────────────────────────────────
 let words = [], animId = null, direction = -1;
 let isRecording = false, isCountingDown = false;
 let settings = { text: 'لا إله إلا اللّٰه محمد رسول اللّٰه', fontSize: 38, speed: 5, count: 12, glow: 6 };
 
 const arabicRe = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-const isAR = t => arabicRe.test(t);
-
-function makeFont(fs, text) {
-  return isAR(text)
-    ? `${fs}px 'Tajawal','Segoe UI',Tahoma,sans-serif`
-    : `300 ${fs}px 'Inter','Segoe UI',sans-serif`;
-}
+const isAR = s => arabicRe.test(s);
+const makeFont = (fs, text) => isAR(text)
+  ? `${fs}px 'Tajawal','Segoe UI',Tahoma,sans-serif`
+  : `300 ${fs}px 'Inter','Segoe UI',sans-serif`;
 
 function measureW(text, fs) {
   offCtx.font = makeFont(fs, text);
   return offCtx.measureText(text).width;
 }
-
-// ─── Word management ──────────────────────────────────────────────────────────
 function buildWords() {
   const { text, fontSize, count, speed } = settings;
   const sf = Math.round(fontSize * (W / 520));
-  const n = Math.min(count, Math.floor(H / (sf * 1.3)));
+  const n  = Math.min(count, Math.floor(H / (sf * 1.3)));
   words = [];
   for (let i = 0; i < n; i++) {
-    const rh = H / n, d = Math.random();
+    const d = Math.random(), rh = H / n;
     const fs = Math.round(sf * (0.72 + d * 0.5));
     const tw = measureW(text, fs);
     const spd = (speed * (W / 520)) * (0.45 + d * 0.9);
-    const startOffset = Math.random() * W * 0.5;
-    const arabic = isAR(text);
+    const so = Math.random() * W * 0.5;
     words.push({
-      text, fs, tw, arabic,
-      fontStr: makeFont(fs, text),                  // ← cached font string
-      y: Math.max(fs * 1.4, Math.min(H - fs * 0.4,
-          rh * i + rh * 0.5 + (Math.random() - .5) * rh * 0.35)),
-      x: direction === -1 ? W * 0.1 + startOffset * 0.3 : W * 0.9 - tw - startOffset * 0.3,
+      text, fs, tw, fontStr: makeFont(fs, text), arabic: isAR(text),
+      y: Math.max(fs * 1.4, Math.min(H - fs * 0.4, rh * i + rh * 0.5 + (Math.random() - .5) * rh * 0.35)),
+      x: direction === -1 ? W * 0.1 + so * 0.3 : W * 0.9 - tw - so * 0.3,
       speed: spd * (direction === -1 ? -1 : 1),
       opacity: 0.22 + d * 0.78,
       blur: d < 0.25 ? (1 - d / 0.25) * 2 : 0,
@@ -375,127 +343,85 @@ function buildWords() {
     });
   }
 }
-
 function resetWord(w) {
   const { text, fontSize, speed } = settings;
-  const sf = Math.round(fontSize * (W / 520));
-  const d = Math.random();
-  w.opacity = 0.22 + d * 0.78;
-  w.blur = d < 0.25 ? (1 - d / 0.25) * 2 : 0;
-  w.fs = Math.round(sf * (0.72 + d * 0.5));
-  w.tw = measureW(text, w.fs);
-  w.fontStr = makeFont(w.fs, text);                 // ← update cache
-  w.arabic = isAR(text);
-  w.text = text;
+  const d = Math.random(), sf = Math.round(fontSize * (W / 520));
+  w.opacity = 0.22 + d * 0.78; w.blur = d < 0.25 ? (1 - d / 0.25) * 2 : 0;
+  w.fs = Math.round(sf * (0.72 + d * 0.5)); w.tw = measureW(text, w.fs);
+  w.fontStr = makeFont(w.fs, text); w.arabic = isAR(text); w.text = text;
   w.speed = (speed * (W / 520)) * (0.45 + d * 0.9) * (direction === -1 ? -1 : 1);
   w.dir = direction;
-  w.x = direction === -1
-    ? W + w.tw + 20 + Math.random() * 300
-    : -(w.tw + 20 + Math.random() * 300);
+  w.x = direction === -1 ? W + w.tw + 20 + Math.random() * 300 : -(w.tw + 20 + Math.random() * 300);
 }
-
-// ─── Draw (optimised) ─────────────────────────────────────────────────────────
-// Strategy:
-//   Pass 1 — no blur words (vast majority): single filter=none, no save/restore
-//   Pass 2 — blur words (only the faintest ~25%): set filter per word, reset after
-// This avoids per-word save/restore and minimises GPU state changes.
 function drawFrame() {
   const gp = settings.glow * (W / 520);
   offCtx.fillStyle = '#000';
   offCtx.fillRect(0, 0, W, H);
   offCtx.fillStyle = '#fff';
   offCtx.textBaseline = 'middle';
-
-  // Global glow/shadow (applied once)
-  if (gp > 0) {
-    offCtx.shadowColor = 'rgba(255,255,255,.9)';
-    offCtx.shadowBlur = gp;
-  } else {
-    offCtx.shadowBlur = 0;
-  }
-
-  // Pass 1: non-blurred words
+  if (gp > 0) { offCtx.shadowColor = 'rgba(255,255,255,.9)'; offCtx.shadowBlur = gp; }
+  else offCtx.shadowBlur = 0;
+  // Pass 1: no blur
   offCtx.filter = 'none';
   for (let i = 0; i < words.length; i++) {
-    const w = words[i];
-    if (w.blur > 0) continue;
-    offCtx.globalAlpha = w.opacity;
-    offCtx.font = w.fontStr;
-    if (w.arabic) { offCtx.direction = 'rtl'; offCtx.textAlign = 'right'; }
-    else           { offCtx.direction = 'ltr'; offCtx.textAlign = 'left';  }
+    const w = words[i]; if (w.blur > 0) continue;
+    offCtx.globalAlpha = w.opacity; offCtx.font = w.fontStr;
+    offCtx.direction = w.arabic ? 'rtl' : 'ltr';
+    offCtx.textAlign = w.arabic ? 'right' : 'left';
     offCtx.fillText(w.text, w.arabic ? w.x + w.tw : w.x, w.y);
-    // move
     w.x += w.speed;
     if (w.dir === -1 && w.x + w.tw < 0) resetWord(w);
-    else if (w.dir === 1 && w.x > W)    resetWord(w);
+    else if (w.dir === 1 && w.x > W)   resetWord(w);
   }
-
-  // Pass 2: blurred words (rare — only the faintest subset)
+  // Pass 2: blurred
   for (let i = 0; i < words.length; i++) {
-    const w = words[i];
-    if (w.blur === 0) continue;
+    const w = words[i]; if (w.blur === 0) continue;
     offCtx.filter = `blur(${w.blur.toFixed(1)}px)`;
-    offCtx.globalAlpha = w.opacity;
-    offCtx.font = w.fontStr;
-    if (w.arabic) { offCtx.direction = 'rtl'; offCtx.textAlign = 'right'; }
-    else           { offCtx.direction = 'ltr'; offCtx.textAlign = 'left';  }
+    offCtx.globalAlpha = w.opacity; offCtx.font = w.fontStr;
+    offCtx.direction = w.arabic ? 'rtl' : 'ltr';
+    offCtx.textAlign = w.arabic ? 'right' : 'left';
     offCtx.fillText(w.text, w.arabic ? w.x + w.tw : w.x, w.y);
-    // move
     w.x += w.speed;
     if (w.dir === -1 && w.x + w.tw < 0) resetWord(w);
-    else if (w.dir === 1 && w.x > W)    resetWord(w);
+    else if (w.dir === 1 && w.x > W)   resetWord(w);
   }
-
-  // Reset state
-  offCtx.filter = 'none';
-  offCtx.shadowBlur = 0;
-  offCtx.globalAlpha = 1;
-
-  // Scale down to preview
-  pCtx.drawImage(offCanvas, 0, 0, PW, PH);
+  offCtx.filter = 'none'; offCtx.shadowBlur = 0; offCtx.globalAlpha = 1;
+  pCtx.drawImage(offCanvas, 0, 0, 270, 480);
 }
-
 let lastTime = 0;
-const FRAME_MS = 1000 / 30;
 function loop(ts) {
   animId = requestAnimationFrame(loop);
-  if (ts - lastTime < FRAME_MS) return;
-  lastTime = ts;
-  drawFrame();
+  if (ts - lastTime < 1000 / 30) return;
+  lastTime = ts; drawFrame();
 }
-
 function startAnimation() {
   settings.text = document.getElementById('textInput').value.trim() || 'LUXURY';
   if (animId) cancelAnimationFrame(animId);
   buildWords(); lastTime = 0;
   animId = requestAnimationFrame(loop);
 }
-
 document.fonts.ready.then(() => startAnimation());
 document.getElementById('textInput').addEventListener('keydown', e => { if (e.key === 'Enter') startAnimation(); });
 
 let rebuildTimer = null;
 function debouncedRebuild() { clearTimeout(rebuildTimer); rebuildTimer = setTimeout(startAnimation, 80); }
-
 function bindSlider(id, valId, key, fn) {
   const el = document.getElementById(id), lbl = document.getElementById(valId);
   lbl.textContent = el.value;
   el.addEventListener('input', () => {
-    lbl.textContent = el.value;
-    settings[key] = parseFloat(el.value);
+    lbl.textContent = el.value; settings[key] = parseFloat(el.value);
     if (fn) fn(); else debouncedRebuild();
   });
 }
-bindSlider('sizeRange',  'sizeVal',  'fontSize');
-bindSlider('countRange', 'countVal', 'count');
-bindSlider('glowRange',  'glowVal',  'glow');
-bindSlider('speedRange', 'speedVal', 'speed', () => {
+bindSlider('sizeRange','sizeVal','fontSize');
+bindSlider('countRange','countVal','count');
+bindSlider('glowRange','glowVal','glow');
+bindSlider('speedRange','speedVal','speed', () => {
   words.forEach(w => {
     const d = (w.opacity - 0.22) / 0.78;
     w.speed = (settings.speed * (W / 520)) * (0.45 + d * 0.9) * (direction === -1 ? -1 : 1);
   });
 });
-
 document.querySelectorAll('.dir-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
@@ -505,287 +431,168 @@ document.querySelectorAll('.dir-btn').forEach(btn => {
   });
 });
 
-// ─── Recording UI helpers ─────────────────────────────────────────────────────
-const hasWebCodecs = typeof window.VideoEncoder !== 'undefined' && typeof window.VideoFrame !== 'undefined';
+// ─── Recording UI refs ────────────────────────────────────────────────────────
 const recordBtn      = document.getElementById('recordBtn');
 const progressWrap   = document.getElementById('progressWrap');
 const progressBar    = document.getElementById('progressBar');
 const statusText     = document.getElementById('statusText');
 const countdownBadge = document.getElementById('countdownBadge');
 
-function setProgress(pct) { progressBar.style.width = pct + '%'; }
+function setStatus(html) { statusText.innerHTML = html; }
+function setProgress(pct) {
+  progressBar.style.transition = 'none';
+  progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+}
+function showProgress() { progressWrap.style.display = 'block'; setProgress(0); }
+function hideProgress() { progressWrap.style.display = 'none'; setProgress(0); }
 
-function finishUI(blobSize) {
-  const t = i18n[currentLang];
-  statusText.textContent = t.lblDone(selectedDuration, (blobSize / 1024 / 1024).toFixed(1));
+// ─── Download helper ──────────────────────────────────────────────────────────
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  // delay removal so Chrome has time to register the click
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 30_000);
+}
+
+function onRecordDone(blob) {
+  const t   = i18n[currentLang];
+  const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+  const mb  = (blob.size / 1024 / 1024).toFixed(1);
+  const ts  = Date.now();
+  triggerDownload(blob, `reel_${selectedDuration}s_${ts}.${ext}`);
+  setProgress(100);
+  setStatus(t.lblDone(selectedDuration, mb));
   recordBtn.classList.remove('recording');
   recordBtn.disabled = false;
   document.getElementById('lblRecord').textContent = t.lblRecord;
-  setProgress(100);
-  setTimeout(() => { progressWrap.style.display = 'none'; setProgress(0); }, 1800);
   isRecording = false;
+  setTimeout(hideProgress, 3000);
 }
 
-function downloadBlob(blob, ext) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = `reel-${selectedDuration}s-${Date.now()}.${ext}`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    a.remove();
-    URL.revokeObjectURL(url);
-  }, 300);
+function onRecordError(msg) {
+  setStatus('⚠ ' + msg);
+  recordBtn.classList.remove('recording');
+  recordBtn.disabled = false;
+  document.getElementById('lblRecord').textContent = i18n[currentLang].lblRecord;
+  isRecording = false;
+  hideProgress();
 }
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
 let countdownTimer = null;
-
 function handleRecord() {
-  if (isRecording) { stopWebmRecording(); return; }
+  if (isRecording)    { stopRecording(); return; }
   if (isCountingDown) { cancelCountdown(); return; }
   beginCountdown();
 }
-
 function beginCountdown() {
   isCountingDown = true;
   recordBtn.disabled = true;
-  statusText.textContent = '';
+  setStatus('');
   let n = 3;
-  const t = i18n[currentLang];
-  countdownBadge.textContent = t.lblCountdown(n);
+  countdownBadge.textContent = i18n[currentLang].lblCountdown(n);
   countdownBadge.className = 'countdown-badge active';
   countdownTimer = setInterval(() => {
     n--;
     if (n <= 0) {
       clearInterval(countdownTimer);
       countdownBadge.textContent = '';
-      countdownBadge.className = 'countdown-badge';
-      recordBtn.disabled = false;
-      isCountingDown = false;
-      // Route to correct recorder
-      if (selectedFormat === 'mp4' && hasWebCodecs) startMp4Recording();
-      else startWebmRecording();
+      countdownBadge.className   = 'countdown-badge';
+      recordBtn.disabled         = false;
+      isCountingDown             = false;
+      startRecording();
     } else {
-      countdownBadge.textContent = t.lblCountdown(n);
+      countdownBadge.textContent = i18n[currentLang].lblCountdown(n);
     }
   }, 1000);
 }
-
 function cancelCountdown() {
   clearInterval(countdownTimer);
   countdownBadge.textContent = ''; countdownBadge.className = 'countdown-badge';
-  recordBtn.disabled = false; isCountingDown = false; statusText.textContent = '';
+  recordBtn.disabled = false; isCountingDown = false; setStatus('');
 }
 
-// ─── WebM recording (MediaRecorder fallback) ──────────────────────────────────
+// ─── MediaRecorder recording ──────────────────────────────────────────────────
 let mediaRecorder = null, chunks = [], recordingTimer = null;
 
-function startWebmRecording() {
-  chunks = []; isRecording = true;
-  progressWrap.style.display = 'block'; setProgress(0);
-  const t = i18n[currentLang];
-  const stream = offCanvas.captureStream(30);
-  const mt = detectMimeType(selectedFormat === 'mp4') || 'video/webm';
-
-  try { mediaRecorder = new MediaRecorder(stream, { mimeType: mt, videoBitsPerSecond: 6_000_000 }); }
-  catch (e) {
-    try { mediaRecorder = new MediaRecorder(stream); }
-    catch (err) {
-      statusText.textContent = currentLang === 'ar' ? 'المتصفح لا يدعم التسجيل.' : 'Recording is not supported in this browser.';
-      recordBtn.classList.remove('recording');
-      recordBtn.disabled = false;
-      isRecording = false;
-      return;
-    }
-  }
-
-  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
-  mediaRecorder.onstop = () => {
-    const mime = mediaRecorder.mimeType || mt || 'video/webm';
-    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
-    const blob = new Blob(chunks, { type: mime });
-
-    if (!blob.size) {
-      statusText.textContent = currentLang === 'ar' ? 'فشل إنشاء ملف الفيديو.' : 'Failed to create the video file.';
-      recordBtn.classList.remove('recording');
-      recordBtn.disabled = false;
-      isRecording = false;
-      return;
-    }
-
-    downloadBlob(blob, ext);
-    finishUI(blob.size);
-  };
-
-  try { mediaRecorder.start(200); }
-  catch (err) {
-    statusText.textContent = currentLang === 'ar' ? 'تعذر بدء التسجيل.' : 'Could not start recording.';
-    recordBtn.classList.remove('recording');
-    recordBtn.disabled = false;
-    isRecording = false;
+function startRecording() {
+  // 1. Get canvas stream — must happen synchronously on user-gesture chain
+  let stream;
+  try {
+    stream = offCanvas.captureStream(30);
+  } catch (e) {
+    onRecordError('captureStream failed: ' + e.message);
     return;
   }
 
+  // 2. Decide MIME type
+  const mime = pickMime(selectedFormat === 'mp4'); // null → browser default
+
+  // 3. Create MediaRecorder
+  try {
+    const opts = { videoBitsPerSecond: 8_000_000 };
+    if (mime) opts.mimeType = mime;
+    mediaRecorder = new MediaRecorder(stream, opts);
+  } catch (e) {
+    // Last resort — no options at all
+    try { mediaRecorder = new MediaRecorder(stream); }
+    catch (e2) { onRecordError('MediaRecorder not supported: ' + e2.message); return; }
+  }
+
+  // 4. Wire events
+  chunks = [];
+  mediaRecorder.addEventListener('dataavailable', e => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  });
+  mediaRecorder.addEventListener('stop', () => {
+    if (chunks.length === 0) { onRecordError('No data recorded.'); return; }
+    const type = mediaRecorder.mimeType || mime || 'video/webm';
+    onRecordDone(new Blob(chunks, { type }));
+  });
+  mediaRecorder.addEventListener('error', e => {
+    onRecordError('MediaRecorder error: ' + (e.error?.message || String(e)));
+  });
+
+  // 5. Start
+  mediaRecorder.start(200);  // chunk every 200ms
+  isRecording = true;
   recordBtn.classList.add('recording');
-  const total = selectedDuration; let elapsed = 0;
+  showProgress();
+
+  // 6. Countdown timer
+  const total = selectedDuration;
+  let elapsed  = 0;
   const tick = () => {
+    if (!isRecording) return;
     elapsed++;
     setProgress(elapsed / total * 100);
-    statusText.innerHTML = `<span class="rec-dot"></span>${t.lblRecording(total - elapsed)}`;
-    if (elapsed >= total) {
-      statusText.innerHTML = `<span class="rec-dot"></span>${t.lblProcessing}`;
-      stopWebmRecording();
+    const left = total - elapsed;
+    if (left <= 0) {
+      setStatus(`<span class="rec-dot"></span>${i18n[currentLang].lblProcessing}`);
+      stopRecording();
     } else {
+      setStatus(`<span class="rec-dot"></span>${i18n[currentLang].lblRecording(left)}`);
       recordingTimer = setTimeout(tick, 1000);
     }
   };
   recordingTimer = setTimeout(tick, 1000);
 }
 
-function stopWebmRecording() {
+function stopRecording() {
   if (recordingTimer) { clearTimeout(recordingTimer); recordingTimer = null; }
-  if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try { mediaRecorder.stop(); } catch (_) {}
+  }
   recordBtn.disabled = true;
   document.getElementById('lblRecord').textContent = i18n[currentLang].lblProcessing;
 }
 
-// ─── MP4 recording (WebCodecs + mp4-muxer) ───────────────────────────────────
-// Uses:  VideoEncoder API  +  mp4-muxer (ESM, loaded on demand from CDN)
-// Produces genuine H.264 / AAC-less MP4, playable everywhere.
-let mp4FrameTimer = null;
-
-async function startMp4Recording() {
-  const t = i18n[currentLang];
-  isRecording = true;
-  recordBtn.classList.add('recording');
-  progressWrap.style.display = 'block'; setProgress(0);
-  statusText.innerHTML = `<span class="rec-dot"></span>${t.lblProcessing}`;
-
-  // Dynamically import mp4-muxer (ESM) — no extra <script> tag needed
-  let Muxer, ArrayBufferTarget;
-  try {
-    const mod = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@latest/build/mp4-muxer.js');
-    ({ Muxer, ArrayBufferTarget } = mod);
-  } catch (err) {
-    console.warn('mp4-muxer load failed, falling back to WebM', err);
-    isRecording = false;
-    recordBtn.classList.remove('recording');
-    progressWrap.style.display = 'none';
-    startWebmRecording();
-    return;
-  }
-
-  const target = new ArrayBufferTarget();
-  const muxer = new Muxer({
-    target,
-    video: { codec: 'avc', width: W, height: H, frameRate: 30 },
-    fastStart: 'in-memory'     // keeps the moov atom in memory, faster seek
-  });
-
-  // Check codec support
-  const codecCfg = {
-    codec: 'avc1.640029',     // H.264 High Profile Level 4.1
-    width: W, height: H,
-    bitrate: 8_000_000,
-    framerate: 30,
-    latencyMode: 'quality'
-  };
-  let supported = false;
-  try {
-    const check = await VideoEncoder.isConfigSupported(codecCfg);
-    supported = check.supported;
-  } catch (_) { /* API not available at all */ }
-
-  if (!supported) {
-    // Try baseline profile
-    codecCfg.codec = 'avc1.42001f'; // Baseline Level 3.1
-    try {
-      const check = await VideoEncoder.isConfigSupported(codecCfg);
-      supported = check.supported;
-    } catch (_) {}
-  }
-
-  if (!supported) {
-    console.warn('H.264 not supported, falling back to WebM');
-    isRecording = false;
-    recordBtn.classList.remove('recording');
-    progressWrap.style.display = 'none';
-    startWebmRecording();
-    return;
-  }
-
-  const encoder = new VideoEncoder({
-    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-    error: e => console.error('VideoEncoder error:', e)
-  });
-  encoder.configure(codecCfg);
-
-  const FPS = 30;
-  const totalFrames = selectedDuration * FPS;
-  const frameIntervalMs = 1000 / FPS;
-  const frameDurationUs = Math.round(1_000_000 / FPS); // microseconds
-  let frameIndex = 0;
-
-  const captureNextFrame = async () => {
-    if (!isRecording || frameIndex >= totalFrames) {
-      // ── Finalise ──────────────────────────────────────────────────
-      mp4FrameTimer = null;
-      recordBtn.disabled = true;
-      document.getElementById('lblRecord').textContent = t.lblProcessing;
-      statusText.innerHTML = `<span class="rec-dot"></span>${t.lblProcessing}`;
-
-      await encoder.flush();
-      encoder.close();
-      muxer.finalize();
-
-      const blob = new Blob([target.buffer], { type: 'video/mp4' });
-      downloadBlob(blob, 'mp4');
-      finishUI(blob.size);
-      return;
-    }
-
-    // Encode one frame
-    const timestamp = frameIndex * frameDurationUs;
-    let frame;
-    try {
-      frame = new VideoFrame(offCanvas, { timestamp, duration: frameDurationUs });
-    } catch (e) {
-      console.error('VideoFrame creation failed:', e);
-      frame = null;
-    }
-
-    if (frame) {
-      encoder.encode(frame, { keyFrame: frameIndex % (FPS * 2) === 0 });
-      frame.close();
-    }
-
-    frameIndex++;
-    const elapsedSec = Math.floor(frameIndex / FPS);
-    const remainSec  = selectedDuration - elapsedSec;
-    setProgress(frameIndex / totalFrames * 100);
-    statusText.innerHTML = `<span class="rec-dot"></span>${t.lblRecording(remainSec)}`;
-
-    mp4FrameTimer = setTimeout(captureNextFrame, frameIntervalMs);
-  };
-
-  captureNextFrame();
-}
-
-// Expose a stop hook so the recording button works during MP4 capture
-const _origHandleRecord = handleRecord;
-// (For MP4 we let the timer run to completion; button just shows disabled)
-
 // ─── Init ─────────────────────────────────────────────────────────────────────
-if (!nativeMp4) {
-  const mp4Chip = document.querySelector('[data-fmt="mp4"]');
-  if (mp4Chip) {
-    mp4Chip.style.opacity = '0.55';
-    mp4Chip.title = 'Direct MP4 export is not supported in this browser';
-  }
-}
 updateFormatNote();
 </script>
 </body>
